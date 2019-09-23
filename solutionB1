@@ -1,0 +1,42 @@
+/*Найти лексикографически-минимальную строку, построенную по префикс-функции, в алфавите a-z.*/
+#include <iostream>
+#include <string>
+#include <vector>
+
+void make_string(const std::vector<int>& pref_func, std::string& answer) {
+    answer += 'a';
+    std::vector<char> alphabet(26, 1);
+    for (int i = 1; i < pref_func.size(); ++i) {
+        if (pref_func[i] == 0){
+            int prev_pref_func = pref_func[i - 1]; //значение префикс-функции для символа, стоящего перед
+            // рассматриваемым
+            alphabet[0] = 0; //при префик-функции равной 0 новый символ не 'a'
+            while (prev_pref_func != 0) {
+                //проверяем, что не продлеваем  префикс меньшей длины
+                if (answer[i - prev_pref_func] == 'a')
+                    alphabet[answer[prev_pref_func] - 'a'] = 0;
+                --prev_pref_func;
+            }
+            for (int k = 1;; ++k){
+                if (alphabet[k] != 0){
+                    answer += static_cast<char>(k + 'a');
+                    break;
+                }
+            }
+            alphabet.assign(26, 1);
+        }
+        else
+            answer += static_cast<char>(answer[pref_func[i] - 1]);
+    }
+}
+int main() {
+    std::vector<int> input;
+    int c = 0;
+    while(std::cin >> c) {
+        input.push_back(c);
+    }
+    std::string answer("");
+    make_string(input, answer);
+    std::cout << answer;
+    return 0;
+}
