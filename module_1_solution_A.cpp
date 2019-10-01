@@ -4,10 +4,12 @@ p <= 30000, n <= 300000.
 - С помощью префикс-функции;
 - С помощью z-функции.*/
 
-#include <iostream>
+#include <fstream>
 #include <vector>
+#include <iterator>
+#include <iostream>
 
-std::vector<int> prefix_function(std::string& text) {
+std::vector<int> prefix_function(const std::string& text) {
     std::vector<int> prefix_function_result(text.length(), 0);
     uint32_t  current_pref_len = 0;
 
@@ -28,16 +30,17 @@ std::vector<int> prefix_function(std::string& text) {
     return prefix_function_result;
 }
 
-template <class Container>
-void find_occurence(std::istream& input, std::string& pattern, std::insert_iterator<Container>& result){
+template <class InputIterator, class OutputIterator>
+void find_occurence(InputIterator& input, std::string& pattern, OutputIterator& output){
     std::vector<int> pattern_prefix_function = prefix_function(pattern);
 
     uint32_t current_pref_len = 0; //длина текущего рассматриваемого префикса
-    char s = input.get(); //текущий символ
+    char s = *input; //текущий символ
+    ++input;
     uint32_t index = 0;
     pattern += '#'; //разделитель для корректного подсчета префикс-функции
-
-    while ((s = input.get()) != '\n') {
+    s = *input;
+    while (s != '\n') {
         while(s != pattern[current_pref_len] && current_pref_len != 0) {
             current_pref_len = pattern_prefix_function[current_pref_len - 1];
         }
@@ -46,30 +49,27 @@ void find_occurence(std::istream& input, std::string& pattern, std::insert_itera
             ++current_pref_len;
 
             if (current_pref_len == pattern.size() - 1) {
-                result = index - pattern.size() + 2;
-                ++result;
+                output = index - pattern.size() + 2;
+                ++output;
             }
         }
 
         ++index;
+        s = *input;
+        ++input;
     }
 }
 
 
 int main() {
-    std::string pattern("");
-    std::vector<int> result(0);
+    std::string pattern;
 
     std::cin >> pattern;
 
-    std::insert_iterator<std::vector<int>> iter =
-            std::insert_iterator<std::vector<int>>(result, result.begin());
-    
-    find_occurence<std::vector<int>>(std::cin, pattern, iter);
+    std::istream_iterator<char> input_iter(std::cin);
+    std::ostream_iterator<size_t> output_iter(std::cout, " ");
 
-    for (auto v : result)  {
-        std::cout << v << ' ';
-    }
+    find_occurence<std::istream_iterator<char>, std::ostream_iterator<size_t>>(input_iter, pattern, output_iter);
 
     return 0;
 }
