@@ -35,12 +35,11 @@ void find_occurence(InputIterator& input, std::string& pattern, OutputIterator& 
     std::vector<int> pattern_prefix_function = prefix_function(pattern);
 
     uint32_t current_pref_len = 0; //длина текущего рассматриваемого префикса
-    char s = *input; //текущий символ
-    ++input;
+    char s; //текущий символ
     uint32_t index = 0;
     pattern += '#'; //разделитель для корректного подсчета префикс-функции
-    s = *input;
-    while (s != '\n') {
+    while (input != std::istream_iterator<char>()) {
+        s = *input;
         while(s != pattern[current_pref_len] && current_pref_len != 0) {
             current_pref_len = pattern_prefix_function[current_pref_len - 1];
         }
@@ -49,13 +48,11 @@ void find_occurence(InputIterator& input, std::string& pattern, OutputIterator& 
             ++current_pref_len;
 
             if (current_pref_len == pattern.size() - 1) {
-                output = index - pattern.size() + 2;
-                ++output;
+                *output = index - pattern.size() + 2;
             }
         }
 
         ++index;
-        s = *input;
         ++input;
     }
 }
@@ -66,6 +63,7 @@ int main() {
 
     std::cin >> pattern;
 
+    std::cin.tie(nullptr);
     std::istream_iterator<char> input_iter(std::cin);
     std::ostream_iterator<size_t> output_iter(std::cout, " ");
 
