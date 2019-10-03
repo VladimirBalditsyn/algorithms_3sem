@@ -9,11 +9,11 @@ p <= 30000, n <= 300000.
 #include <iterator>
 #include <iostream>
 
-std::vector<int> prefix_function(const std::string& text) {
+std::vector<size_t> prefix_function(const std::string& text) {
     std::vector<int> prefix_function_result(text.length(), 0);
-    uint32_t  current_pref_len = 0;
+    size_t  current_pref_len = 0;
 
-    for (uint32_t i = 1; i < text.length(); ++i){ //считаем префикс-функцию для паттерна
+    for (size_t i = 1; i < text.length(); ++i){ //считаем префикс-функцию для паттерна
         current_pref_len = prefix_function_result[i - 1];
 
         while (text[current_pref_len] != text[i] && current_pref_len != 0) {
@@ -32,11 +32,11 @@ std::vector<int> prefix_function(const std::string& text) {
 
 template <class InputIterator, class OutputIterator>
 void find_occurence(InputIterator& input, std::string& pattern, OutputIterator& output){
-    std::vector<int> pattern_prefix_function = prefix_function(pattern);
+    std::vector<size_t> pattern_prefix_function = prefix_function(pattern);
 
-    uint32_t current_pref_len = 0; //длина текущего рассматриваемого префикса
+    size_t current_pref_len = 0; //длина текущего рассматриваемого префикса
     char s; //текущий символ
-    uint32_t index = 0;
+    size_t index = 0;
     pattern += '#'; //разделитель для корректного подсчета префикс-функции
     while (input != std::istream_iterator<char>()) {
         s = *input;
