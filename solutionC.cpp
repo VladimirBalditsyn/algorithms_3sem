@@ -1,10 +1,13 @@
+/*Шаблон поиска задан строкой длины m, в которой кроме обычных символов 
+могут встречаться символы “?”. Найти позиции всех вхождений шаблона в тексте длины n. 
+Каждое вхождение шаблона предполагает, что все обычные символы совпадают с соответствующими из текста, 
+а вместо символа “?” в тексте встречается произвольный символ. 
+Время работы - O(n + m + Z), где Z - общее -число вхождений подстрок шаблона “между вопросиками” в исходном тексте. 
+m ≤ 5000, n ≤ 2000000.*/
 #include <iostream>
 #include <vector>
-#include <map>
-#include <fstream>
 #include <string>
 #include <queue>
-#include <iterator>
 #include <memory>
 
 constexpr char first_letter = 'a';
@@ -141,11 +144,11 @@ std::vector<std::string> pattern_split(const std::string& pattern, const char sp
 }
 
 
-std::vector<size_t> find_patterns_incomings(const std::string& pattern, const std::string& text) {
+std::vector<uint32_t> find_patterns_incomings(const std::string& pattern, const std::string& text) {
     std::vector<size_t> subpattern_distance;
     std::vector<std::string> patterns = pattern_split(pattern, '?', subpattern_distance);
     std::shared_ptr<Node> trie = create_trie(patterns);
-    std::vector<size_t> count_incomings(text.length(), 0);
+    std::vector<uint16_t> count_incomings(text.length(), 0);
 
     std::shared_ptr<Node> current_vertex = trie;
     std::shared_ptr<Node> short_suf;
@@ -155,17 +158,19 @@ std::vector<size_t> find_patterns_incomings(const std::string& pattern, const st
              current_vertex = current_vertex->next_vertices[text[i] - first_letter];
 
              if (current_vertex->is_terminate) {
-                 for (auto v : current_vertex->index_of_pattern)
+                 for (auto v : current_vertex->index_of_pattern) {
                     if (subpattern_distance[v] <= i)
                         ++count_incomings[i - subpattern_distance[v]];
+                 }
              }
 
              short_suf = current_vertex->short_suf_link.lock();
 
              while (short_suf) {
-                 for (auto v : short_suf->index_of_pattern)
+                 for (auto v : short_suf->index_of_pattern) {
                      if (subpattern_distance[v] <= i)
                          ++count_incomings[i - subpattern_distance[v]];
+                 }
                  short_suf = short_suf->short_suf_link.lock();
              }
          }
@@ -178,9 +183,9 @@ std::vector<size_t> find_patterns_incomings(const std::string& pattern, const st
          }
     }
 
-    std::vector<size_t> answer;
+    std::vector<uint32_t> answer;
 
-    for (size_t i = 0; i < text.length() - pattern.length() + 1; ++i) {
+    for (size_t i = 0; i < (text.length() > pattern.length() - 1 ? text.length() - pattern.length() + 1 : 0); ++i) {
         if (count_incomings[i] == patterns.size())
             answer.push_back(i);
     }
@@ -192,7 +197,7 @@ int main() {
     std::string pattern;
     std::cin >> pattern;
     std::cin >> text;
-    std::vector<size_t> result = find_patterns_incomings(pattern, text);
+    std::vector<uint32_t> result = find_patterns_incomings(pattern, text);
     for (auto v : result) {
         std::cout << v << ' ';
     }
