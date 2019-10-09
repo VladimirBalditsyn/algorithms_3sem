@@ -16,11 +16,14 @@
 constexpr char first_letter = 'a';
 constexpr size_t alphabet_size = 26;
 
+class Aho_Korasick;
+
 class Trie {
 public:
     Trie(const std::vector<std::pair<std::string_view, size_t>>& subpatterns);
     std::vector<uint32_t> Aho_Korasick(const char c);
 
+    friend class Aho_Korasick;
 private:
     struct Node {
         Node(char _letter, bool _is_terminate)
@@ -41,7 +44,6 @@ private:
     };
 
     std::shared_ptr<Node> root;
-    std::shared_ptr<Node> current_vertex;
 
     void add_next_vertices(std::shared_ptr<Node> vertex, std::queue<std::shared_ptr<Node>>& output);
     void create_suf_ptr();
@@ -56,8 +58,6 @@ Trie::Trie(const std::vector<std::pair<std::string_view, size_t>>& subpatterns) 
     }
 
     create_suf_ptr();
-
-    current_vertex = root;
 }
 
 void Trie::add_pattern(const std::string_view& pattern, size_t pattern_index) {
@@ -153,8 +153,20 @@ std::vector<std::pair<std::string_view, size_t>> pattern_split(std::string_view 
     return result;
 }
 
-std::vector<uint32_t> Trie::Aho_Korasick(const char c) {
-    std::shared_ptr<Node> short_suf;
+class Aho_Korasick {
+public:
+    Aho_Korasick(const Trie& trie)
+    : current_vertex(trie.root)
+    , root(trie.root) { }
+    std::vector<uint32_t> next_state(const char c);
+
+private:
+    std::shared_ptr<Trie::Node> current_vertex;
+    std::shared_ptr<Trie::Node> root;
+};
+
+std::vector<uint32_t> Aho_Korasick::next_state(const char c) {
+    std::shared_ptr<Trie::Node> short_suf;
     std::vector<uint32_t> result;
 
     while (true) {
@@ -176,14 +188,12 @@ std::vector<uint32_t> Trie::Aho_Korasick(const char c) {
                 short_suf = short_suf->short_suf_link.lock();
             }
             break;
-        } 
-        else if (current_vertex != root) {
+        } else if (current_vertex != root) {
             while (current_vertex != root) {
                 current_vertex = current_vertex->suf_link.lock();
                 if (current_vertex->next_vertices[c - first_letter] != nullptr) break;
             }
-        } 
-        else break;
+        } else break;
     }
     return result;
 }
@@ -193,9 +203,10 @@ std::vector<uint32_t> find_patterns_occurances(std::string_view pattern, const s
     std::vector<uint16_t> count_occurances(text.length(), 0);
     std::vector<uint32_t> answer;
     Trie trie(subpatterns);
+    Aho_Korasick aho_korasick(trie);
 
     for (size_t i = 0; i < text.length(); ++i) {
-        std::vector<uint32_t> subpattern_occurences_index = trie.Aho_Korasick(text[i]);
+        std::vector<uint32_t> subpattern_occurences_index = aho_korasick.next_state(text[i]);
         for (auto v : subpattern_occurences_index) {
             if (i >= subpatterns[v].second)
                 ++count_occurances[i - subpatterns[v].second];
