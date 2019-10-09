@@ -21,7 +21,6 @@ class Aho_Korasick;
 class Trie {
 public:
     Trie(const std::vector<std::pair<std::string_view, size_t>>& subpatterns);
-    std::vector<uint32_t> Aho_Korasick(const char c);
 
     friend class Aho_Korasick;
 private:
