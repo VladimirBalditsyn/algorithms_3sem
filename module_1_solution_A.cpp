@@ -65,10 +65,10 @@ int main() {
 
     std::cin.tie(nullptr);
     std::istream_iterator<char> input_iter(std::cin);
-    std::istream_iterator<char> input_iter_end = std::istream_iterator<char>();
+    std::istream_iterator<char> input_iter_end;
     std::ostream_iterator<size_t> output_iter(std::cout, " ");
 
-    find_occurence<>(input_iter, input_iter_end, pattern, output_iter);
+    find_occurence(input_iter, input_iter_end, pattern, output_iter);
 
     return 0;
 }
