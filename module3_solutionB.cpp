@@ -1,5 +1,5 @@
 /*Даны n точек в пространстве. Никакие 4 точки не лежат в одной полуплоскости.
-Найдите выпуклую оболочку этих точек за O(n*log(n)).
+ * Найдите выпуклую оболочку этих точек за O(n*log(n)).
 
 Формат ввода
 Первая строка содержит число m - количество тестов.
@@ -109,7 +109,7 @@ struct Tetrad {
         std::cout << first << " " << second << " " << third << " " << fourth << "\n";
     }
 
-    void organize() {
+    void organize_last_three_elems(){ //sort dots to a minimum lexicographical ordert with saving right orientation 
         char min = 1;
         size_t tmp = second;
         if (tmp > third) { tmp = third; min = 2; }
@@ -203,8 +203,8 @@ double time(Dot* p, Dot* q, Dot* r) { //return time when sign of turn changes <-
 
 //in that part we go form 3D to 2D, so Dots becomes Events
 //there are two types of Events - insertion and deletion
-std::vector<Dot*> _build_lower_part_of_convex_hull(std::vector<Dot>::iterator start_list_of_events
-                                                 ,std::vector<Dot>::iterator end_list_of_events, size_t num) {
+std::vector<Dot*> _build_lower_part_of_convex_hull(const std::vector<Dot>::iterator& start_list_of_events
+                                                 ,const std::vector<Dot>::iterator& end_list_of_events, size_t num) {
     Dot* u;
     Dot* v; //dots of bridge
     std::array<double, 6> times = {INF, INF, INF, INF, INF, INF};
@@ -264,24 +264,25 @@ std::vector<Dot*> _build_lower_part_of_convex_hull(std::vector<Dot>::iterator st
                 if (left_part[i]->current.x < u->current.x) {
                     result.push_back(left_part[i]);
                 }
-                left_part[i]->insert_if_possible();
+                left_part[i]->insert_if_possible(); //insertion or deletion dot from left part
                 ++i;
                 break;
             case 1:
                 if (right_part[j]->current.x > v->current.x) {
                     result.push_back(right_part[j]);
                 }
-                right_part[j]->insert_if_possible();
+                right_part[j]->insert_if_possible(); //insertion or deletion dot from right part
                 ++j;
                 break;
             case 2:
-                u = u->next;
+                u = u->next; //u u->next v become counterclockwise ---> u->next v - new bridge, u go to result
                 result.push_back(u);
                 break;
             case 3:
-                result.push_back(u);
-                u = u->prev;
+                result.push_back(u); //u-prev u v become clockwise ---> u->prev v - new bridge, u go to result
+                u = u->prev;         //and it's action will be deletion
                 break;
+                //symmetric things with v, v->next and v->prev
             case 4:
                 v = v->prev;
                 result.push_back(v);
@@ -295,9 +296,13 @@ std::vector<Dot*> _build_lower_part_of_convex_hull(std::vector<Dot>::iterator st
         }
     }
 
-    u->next = v;
+    u->next = v; //for correct work - it'll happen even result.size() == 0 and on the next stage algorithm will work
     v->prev = u;
-    for (int32_t k = result.size() - 1; k >= 0; --k) { //restore sequence of events
+    //restore sequence of events, because we can't show events correctly in output, because "first" events have happened
+    //many years ago and we can't get information about them, but we need. so we need to see reversed movie.
+    //now all insertions are deletions and deletion  are insertions in result sequence of events (we go back in time)
+    for (int32_t k = result.size() - 1; k >= 0; --k) {
+        //insertion or deletion of dot
         if (result[k]->current.x <= u->current.x || result[k]->current.x >= v->current.x) {
             result[k]->insert_if_possible();
             if (result[k] == v) {
@@ -307,6 +312,7 @@ std::vector<Dot*> _build_lower_part_of_convex_hull(std::vector<Dot>::iterator st
                 u = u->prev;
             }
         }
+        //rebuilding of bridge
         else {
             result[k]->prev = u;
             result[k]->next = v;
@@ -330,13 +336,16 @@ void write_answer(const std::vector<Dot*>& from, std::set<Tetrad>& to, bool is_l
         tmp.third = e->number;
         tmp.fourth = e->next->number;
         flag = e->insert_if_possible();
-        if (is_lower) {
+        if (is_lower) { //if we build higher part, counterclockwise there is clockwise for lower part
             flag = !flag;
         }
         if (flag) { // to get a counterclockwise orientation
+            //if we really build lower part of hull, in insertion u->prev u u->next go in right order,
+            //otherwise it is enough to swap u-prev and u in order
             std::swap(tmp.second, tmp.third);
         }
-        tmp.organize();
+        
+        tmp.organize_last_three_elems();
         to.insert(tmp);
     }
 }
