@@ -71,12 +71,13 @@ double distance(const Vector& first, const Vector& second) {
 }
 
 struct Segment {
-    explicit Segment(const Vector& _start, const Vector& _end) : start(_start), direction(_end - _start) {}
+    explicit Segment(const Vector& _start, const Vector& _end) : start(_start), direction(_end - _start), end(_end) {}
     double length() { return direction.length(); }
     std::pair<Vector, Vector> split_on_three_parts() const;
 
     Vector start;
     Vector direction;
+    Vector end;
 };
 
 std::pair<Vector, Vector> Segment::split_on_three_parts() const {
@@ -85,23 +86,29 @@ std::pair<Vector, Vector> Segment::split_on_three_parts() const {
     return std::make_pair(first, second);
 }
 
-Vector find_nearest_dot(const Vector& dot, const Segment& segment) {
-    const double epsilon = 0.00000001;
-    std::pair<Vector, Vector> dots = segment.split_on_three_parts();
-    Segment cur_seg(segment);
+//class Set_of_Objects must have function split_on_three_parts and constructor
+//form two Objects
+template<class Object, class Set_of_Objects>
+std::pair<double, Object> ternary_search(const Object& dot, const Set_of_Objects& segment,
+        double (*distance)(const Object&, const Object&), double epsilon) {
+
+    std::pair<Object, Object> dots = segment.split_on_three_parts();
+    Set_of_Objects cur_seg(segment);
+    double  result = 0;
     while (cur_seg.length() > epsilon) {
         double first_dist = distance(dot, dots.first);
         double second_dist = distance(dot, dots.second);
 
         if (first_dist > second_dist) {
-            cur_seg = Segment(dots.first, cur_seg.start + cur_seg.direction);
+            cur_seg = Set_of_Objects(dots.first, cur_seg.end);
         }
         else {
-            cur_seg = Segment(cur_seg.start, dots.second);
+            cur_seg = Set_of_Objects(cur_seg.start, dots.second);
         }
         dots = cur_seg.split_on_three_parts();
+        result = 0.5 * (first_dist + second_dist);
     }
-    return (0.5 * (dots.first + dots.second));
+    return std::make_pair(result, 0.5 * (dots.first + dots.second));
 }
 
 double find_distance_between_segments(const Segment& first, const Segment& second) {
@@ -113,8 +120,8 @@ double find_distance_between_segments(const Segment& first, const Segment& secon
     f_dots = first.split_on_three_parts();
     s_dots = second.split_on_three_parts();
     do {
-        s_dots.first = find_nearest_dot(f_dots.first, second);
-        s_dots.second = find_nearest_dot(f_dots.second, second);
+        s_dots.first = ternary_search<Vector, Segment>(f_dots.first, second, distance, epsilon).second;
+        s_dots.second = ternary_search<Vector, Segment>(f_dots.second, second, distance, epsilon).second;
         double s_first_dist = distance(f_dots.first, s_dots.first);
         double s_second_dist = distance(f_dots.second, s_dots.second);
 
