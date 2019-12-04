@@ -1,5 +1,5 @@
 /*Даны два выпуклых многоугольника на плоскости. В первом n точек, во втором m.
- Определите, пересекаются ли они за O(n + m). Указание. Используйте сумму Минковского.
+Определите, пересекаются ли они за O(n + m). Указание. Используйте сумму Минковского.
 
 Формат ввода
 Первая строка содержит число n точек первого многоугольника.
@@ -80,49 +80,15 @@ double distance(const Vector& first, const Vector& second) {
 }
 
 bool is_less_polar_angle(const Vector& first, const Vector& second) {
-    Vector Ox(1, 0);
-    Vector normed_first = (1 / first.length()) * first;
-    Vector normed_second = (1 / second.length()) * second;
-    double first_scal_prod = scalar_product(normed_first, Ox);
-    double second_scal_prod = scalar_product(normed_second, Ox);
-    double first_vect_prod = vector_product(Ox, normed_first);
-    double second_vect_prod = vector_product(Ox, normed_second);
-
-    if (first_scal_prod >= 0) {
-        if (first_vect_prod >= 0) {
-            if (second_scal_prod >= 0) {
-                return (second_vect_prod >= 0 && second_vect_prod >= first_vect_prod) || second_vect_prod < 0;
-            } else {
-                return true;
-            }
-        }
-        else {
-            if (second_scal_prod <= 0 || second_vect_prod >= 0) {
-                return false;
-            }
-            else {
-                return second_vect_prod >= first_vect_prod;
-            }
-        }
+    double vect_prod = vector_product(first, second);
+    if (vect_prod != 0) {
+        return vect_prod > 0;
     }
     else {
-        if (first_vect_prod >= 0) {
-            if (second_scal_prod < 0) {
-                return (second_vect_prod >= 0 && second_vect_prod <= first_vect_prod) || second_vect_prod < 0;
-            } else {
-                return second_vect_prod < 0;
-            }
-        }
-        else {
-            if (second_vect_prod >= 0) {
-                return false;
-            }
-            else {
-                return (second_scal_prod >= 0 && second_vect_prod < 0) || second_vect_prod <= first_vect_prod;
-            }
-        }
+        return scalar_product(first, second) > 0;
     }
 }
+
 
 class Polygon {
 public:
