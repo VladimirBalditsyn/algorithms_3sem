@@ -49,15 +49,6 @@ struct Vector {
         return first.x * second.x + first.y * second.y + first.z * second.z;
     }
 
-    friend Vector proection(const Vector& base, const Vector& to_be_proected) {
-        Vector result;
-        double coef = scalar_product(base, to_be_proected) / base.length();
-        result.x = base.x / abs(base.x) * coef;
-        result.y = base.y / abs(base.y) * coef;
-        result.z = base.z / abs(base.z) * coef;
-        return result;
-    }
-
     friend Vector operator+(const Vector& first, const Vector& second) {
         Vector result;
         result.x = first.x + second.x;
@@ -94,9 +85,9 @@ double distance(const Vector& first, const Vector& second) {
     return result;
 }
 
-struct Tetrad {
-    Tetrad() = default;
-    explicit Tetrad(size_t _first) : first(_first)
+struct Face {
+    Face() = default;
+    explicit Face(size_t _first) : first(_first)
                                    , second(0)
                                    , third(0)
                                    , fourth(0) {}
@@ -109,7 +100,7 @@ struct Tetrad {
         std::cout << first << " " << second << " " << third << " " << fourth << "\n";
     }
 
-    void organize_last_three_elems(){ //sort dots to a minimum lexicographical ordert with saving right orientation 
+    void organize_last_three_elems(){ //sort dots to a minimum lexicographical order with saving right orientation
         char min = 1;
         size_t tmp = second;
         if (tmp > third) { tmp = third; min = 2; }
@@ -135,7 +126,7 @@ struct Tetrad {
         }
     }
 
-    bool friend operator<(const Tetrad& first, const Tetrad& second) {
+    bool friend operator<(const Face& first, const Face& second) {
         if (first.second < second.second) return true;
         else if (first.second == second.second && first.third < second.third) return true;
         else return (first.second == second.second && first.third == second.third && first.fourth < second.fourth);
@@ -328,8 +319,8 @@ std::vector<Dot*> _build_lower_part_of_convex_hull(const std::vector<Dot>::itera
     return result;
 }
 
-void write_answer(const std::vector<Dot*>& from, std::set<Tetrad>& to, bool is_lower) {
-    Tetrad tmp(3);
+void write_answer(const std::vector<Dot*>& from, std::set<Face>& to, bool is_lower) {
+    Face tmp(3);
     bool flag;
     for (auto& e : from) {
         tmp.second = e->prev->number;
@@ -344,15 +335,15 @@ void write_answer(const std::vector<Dot*>& from, std::set<Tetrad>& to, bool is_l
             //otherwise it is enough to swap u-prev and u in order
             std::swap(tmp.second, tmp.third);
         }
-        
+
         tmp.organize_last_three_elems();
         to.insert(tmp);
     }
 }
 
-std::set<Tetrad> build_convex_hull(std::vector<Dot>&& dots) {
-    std::set<Tetrad> result;
-    Tetrad tmp(3);
+std::set<Face> build_convex_hull(std::vector<Dot>&& dots) {
+    std::set<Face> result;
+    Face tmp(3);
     for (auto& d : dots) { //move dots a little to avoid perpendicular to Oxy situation
         d.turn_around_zero(epsilon);
     }
@@ -385,7 +376,7 @@ int main() {
             std::cin >> input[j].current.x >> input[j].current.y >> input[j].current.z;
             input[j].number = j;
         }
-        std::set<Tetrad> result = build_convex_hull(std::move(input));
+        std::set<Face> result = build_convex_hull(std::move(input));
         std::cout << result.size() << '\n';
         for (auto r : result) {
             r.print();
