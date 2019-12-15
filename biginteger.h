@@ -1,3 +1,6 @@
+/*В этой задаче разрешается подключать <iostream>, <vector> и <string> и только их.
+Напишите класс BigInteger для работы с длинными целыми числами.*/
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -10,25 +13,12 @@ public:
     BigInteger() : factorisation(std::vector<int>(1, 0)), sign(true) {}
     BigInteger(int n) { convert_from_int(n); }
     explicit BigInteger(const std::string& str);
-    BigInteger(const BigInteger& another) {
-        sign = another.sign;
-        factorisation = another.factorisation;
-    }
-    BigInteger(BigInteger&& another) noexcept {
-        sign = another.sign;
-        factorisation.swap(another.factorisation);
-    }
 
-    BigInteger& operator=(const BigInteger& another)& {
-        sign = another.sign;
-        factorisation = another.factorisation;
-        return *this;
-    };
-    BigInteger& operator=(BigInteger&& another)& noexcept {
-        sign = another.sign;
-        factorisation.swap(another.factorisation);
-        return *this;
-    }
+    BigInteger(const BigInteger& another)  = default;
+    BigInteger(BigInteger&& another) noexcept = default;
+
+    BigInteger& operator=(const BigInteger& another)& = default;
+    BigInteger& operator=(BigInteger&& another)& noexcept = default;
 
     BigInteger& operator++()&;
     BigInteger& operator--()&;
@@ -85,24 +75,7 @@ private:
     bool sign = true;
     void convert_from_int(int n);
 
-    BigInteger(const BigInteger& another, int base10_deg) {
-        for (int i = 0; i < base10_deg; ++i) {
-            factorisation.push_back(0);
-        }
-        sign = another.sign;
-        factorisation.insert(factorisation.begin() + base10_deg, another.factorisation.begin(),
-                another.factorisation.end());
-    }
-
-    BigInteger(const BigInteger& another, int from, int to) {
-        if (from >= to || to > static_cast<int>(another.factorisation.size())) {
-            factorisation.assign(1,0);
-        }
-
-        auto start_it = another.factorisation.begin() + from;
-        auto end_it = another.factorisation.begin() + to;
-        factorisation.insert(factorisation.begin(), start_it, end_it);
-    }
+    BigInteger(const BigInteger& another, size_t from, size_t to);
 
     friend bool abs_less(const BigInteger& first, const BigInteger& second);
     friend bool abs_equal(const BigInteger& first, const BigInteger& second) {
@@ -113,25 +86,47 @@ private:
     BigInteger divide(const BigInteger& right);
     friend BigInteger karatsuba_multiplication(const BigInteger& first, const BigInteger& second);
 
+    BigInteger fix_length_for_multipl(BigInteger another);
+    BigInteger shift(size_t base10_deg) const;
     void shrink_to_fit() {
         for (size_t i = factorisation.size() - 1; i > 0 && factorisation[i] == 0; --i) {
-            factorisation.erase(factorisation.end() - 1);
+            factorisation.pop_back();
         }
-    }
-
-    BigInteger fix_length_for_multipl(BigInteger another) {
-        for (int i = 0; i < static_cast<int>(factorisation.size())
-                        || i < static_cast<int>(another.factorisation.size()); ++i) {
-            if (i >= static_cast<int>(factorisation.size())) {
-                factorisation.push_back(0);
-            }
-            else if (i >= static_cast<int>(another.factorisation.size())) {
-                another.factorisation.push_back(0);
-            }
-        }
-        return another;
     }
 };
+
+BigInteger::BigInteger(const BigInteger& another, size_t from, size_t to) {
+    if (from >= to || to > static_cast<int>(another.factorisation.size())) {
+        factorisation.assign(1,0);
+    }
+
+    auto start_it = another.factorisation.begin() + from;
+    auto end_it = another.factorisation.begin() + to;
+    factorisation.insert(factorisation.begin(), start_it, end_it);
+}
+
+BigInteger BigInteger::shift(size_t base10_deg) const {
+    BigInteger result;
+    for (size_t i = 0; i < base10_deg; ++i) {
+        result.factorisation.push_back(0);
+    }
+    result.sign = sign;
+    result.factorisation.insert(result.factorisation.begin() + base10_deg, factorisation.begin(),
+            factorisation.end());
+    return result;
+}
+
+BigInteger BigInteger::fix_length_for_multipl(BigInteger another) {
+    for (size_t i = 0; i < factorisation.size() || i < another.factorisation.size(); ++i) {
+        if (i >= factorisation.size()) {
+            factorisation.push_back(0);
+        }
+        else if (i >= another.factorisation.size()) {
+            another.factorisation.push_back(0);
+        }
+    }
+    return another;
+}
 
 void BigInteger::convert_from_int(int n) {
     if (n < 0) {
@@ -153,24 +148,38 @@ BigInteger::BigInteger(const std::string& tmp) {
         sign = true;
         return;
     }
-    int base_length = static_cast<int>(std::to_string(base10).length()) - 1;
 
-    int valid_length = static_cast<int>(tmp.length());
+    size_t base_length = std::to_string(base10).length() - 1;
+
+    size_t valid_length = tmp.length();
     if (tmp[0] == '-') {
         sign = false;
         --valid_length;
     }
+
     size_t reminder = (valid_length % base_length > 0 ? 1 : 0);
     factorisation.assign(valid_length / base_length + reminder, 0);
 
     for (size_t i = 0; i < factorisation.size() - reminder; ++i) {
         std::string t = tmp.substr(tmp.length() - base_length * (i + 1), base_length);
-        factorisation[i] = stoi(t);
+        try {
+            factorisation[i] = stoi(t);
+        }
+        catch (std::invalid_argument&) {
+            factorisation.assign(1, 0);
+            return ;
+        }
     }
     if (reminder > 0) {
         int first_pos = (sign ? 0 : 1);
-        factorisation[factorisation.size() - 1] =
-                stoi(tmp.substr(first_pos, valid_length % base_length));
+        try {
+            factorisation[factorisation.size() - 1] =
+                    stoi(tmp.substr(first_pos, valid_length % base_length));
+        }
+        catch (std::invalid_argument&) {
+            factorisation.assign(1, 0);
+            return ;
+        }
     }
     if (factorisation.size() == 1 && factorisation[0] == 0) sign = true;
     shrink_to_fit();
@@ -339,10 +348,10 @@ BigInteger karatsuba_multiplication(const BigInteger& first, const BigInteger& s
     a0a1b0b1 = karatsuba_multiplication(a0a1, b0b1);
     result = a0b0;
     result.shrink_to_fit();
-    BigInteger tmp = BigInteger(a0a1b0b1 - a0b0 - a1b1, n / 2);
+    BigInteger tmp = (a0a1b0b1 - a0b0 - a1b1).shift(n / 2);
     tmp.shrink_to_fit();
     result += tmp;
-    tmp = BigInteger(a1b1, n - (n % 2));
+    tmp = a1b1.shift(n - (n % 2));
     tmp.shrink_to_fit();
     result += tmp;
     result.shrink_to_fit();
@@ -356,12 +365,11 @@ BigInteger& BigInteger::operator*=(const BigInteger& another)& {
         sign = true_sign;
         return *this;
     }
-    for (int i = 0; i < static_cast<int>(factorisation.size())
-                    || i < static_cast<int>(another_copy.factorisation.size()); ++i) {
-        if (i >= static_cast<int>(factorisation.size())) {
+    for (size_t i = 0; i < factorisation.size() || i < another_copy.factorisation.size(); ++i) {
+        if (i >= factorisation.size()) {
             factorisation.push_back(0);
         }
-        else if (i >= static_cast<int>(another_copy.factorisation.size())) {
+        else if (i >= another_copy.factorisation.size()) {
             another_copy.factorisation.push_back(0);
         }
     }
@@ -404,7 +412,7 @@ BigInteger BigInteger::divide(const BigInteger &right) {
             prev = tmp;
         }
         result.factorisation[i] = counter;
-        *this += BigInteger(prev, i);
+        *this += prev.shift(i);
     }
     shrink_to_fit();
     sign = prev_sign;
